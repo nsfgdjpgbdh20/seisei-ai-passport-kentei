@@ -1,15 +1,14 @@
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Switch, 
-  Alert, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Switch,
+  Alert,
   ScrollView,
   Platform,
-  Linking,
-  SafeAreaView
+  Linking
 } from "react-native";
 import { useTheme } from "@/context/theme-context";
 import { useNotificationStore } from "@/stores/notification-store";
@@ -25,32 +24,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CommonHeader from "../../components/CommonHeader";
 import { sampleQuestions } from "@/data/sample-questions";
 import { sampleFlashcards } from "@/data/sample-flashcards";
+import * as StoreReview from 'expo-store-review';
 
 export default function SettingsScreen() {
   const { theme, colors, toggleTheme } = useTheme();
-  const { 
-    notificationsEnabled, 
-    notificationTime, 
-    toggleNotifications, 
-    setNotificationTime 
+  const {
+    notificationsEnabled,
+    notificationTime,
+    toggleNotifications,
+    setNotificationTime
   } = useNotificationStore();
-  
+
   const { resetProgress } = useProgressStore();
   const { resetFlashcards } = useFlashcardStore();
   const { resetQuestions } = useQuestionStore();
   const insets = useSafeAreaInsets();
-  
+
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
   const handleToggleNotifications = async () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    
+
     const newValue = !notificationsEnabled;
     toggleNotifications();
-    
+
     if (Platform.OS !== "web") {
       if (newValue) {
         scheduleNotification(notificationTime);
@@ -59,28 +59,28 @@ export default function SettingsScreen() {
       }
     }
   };
-  
+
   const handleTimeChange = (time: string) => {
     setNotificationTime(time);
     setShowTimePicker(false);
-    
+
     if (Platform.OS !== "web" && notificationsEnabled) {
       scheduleNotification(time);
     }
   };
-  
+
   const handleResetProgress = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-    
+
     Alert.alert(
       "進捗をリセット",
       "すべての学習進捗がリセットされます。この操作は元に戻せません。",
       [
         { text: "キャンセル", style: "cancel" },
-        { 
-          text: "リセット", 
+        {
+          text: "リセット",
           style: "destructive",
           onPress: () => {
             resetProgress();
@@ -91,18 +91,18 @@ export default function SettingsScreen() {
       ]
     );
   };
-  
+
   const handleCheckForUpdates = async () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    
+
     setIsUpdating(true);
-    
+
     try {
       // 更新チェック処理を実行
       const result = await checkForQuestionUpdates();
-      
+
       // 常に「更新なし」と表示（モック実装のため）
       Alert.alert(
         "更新確認",
@@ -120,24 +120,24 @@ export default function SettingsScreen() {
       setIsUpdating(false);
     }
   };
-  
+
   const handleOpenWebsite = (url: string) => {
     Linking.openURL(url).catch(err => {
       console.error("リンクを開けませんでした:", err);
     });
   };
-  
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <CommonHeader title="" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             アプリ設定
           </Text>
-          
+
           <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.settingRow}
               onPress={toggleTheme}
             >
@@ -163,10 +163,10 @@ export default function SettingsScreen() {
                 thumbColor={theme === "dark" ? colors.primary : "#f4f3f4"}
               />
             </TouchableOpacity>
-            
+
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.settingRow}
               onPress={handleToggleNotifications}
             >
@@ -188,12 +188,12 @@ export default function SettingsScreen() {
                 thumbColor={notificationsEnabled ? colors.primary : "#f4f3f4"}
               />
             </TouchableOpacity>
-            
+
             {notificationsEnabled && (
               <>
                 <View style={[styles.divider, { backgroundColor: colors.border }]} />
-                
-                <TouchableOpacity 
+
+                <TouchableOpacity
                   style={styles.settingRow}
                   onPress={() => setShowTimePicker(true)}
                 >
@@ -221,14 +221,14 @@ export default function SettingsScreen() {
             )}
           </View>
         </View>
-        
+
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             データ管理
           </Text>
-          
+
           <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.settingRow}
               onPress={handleCheckForUpdates}
               disabled={isUpdating}
@@ -245,10 +245,10 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </TouchableOpacity>
-            
+
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.settingRow}
               onPress={handleResetProgress}
             >
@@ -266,12 +266,12 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             アプリ情報
           </Text>
-          
+
           <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
             <View style={styles.settingRow}>
               <View style={styles.settingIconContainer}>
@@ -286,28 +286,53 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </View>
-            
+
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
-            
-            <TouchableOpacity 
+
+            <TouchableOpacity
               style={styles.settingRow}
-              onPress={() => handleOpenWebsite("https://jdla.org/certificate/general/")}
+              onPress={async () => {
+                if (await StoreReview.isAvailableAsync()) {
+                  StoreReview.requestReview();
+                } else {
+                  Alert.alert("レビュー", "ストアのレビュー画面を開けませんでした。");
+                }
+              }}
+            >
+              <View style={styles.settingIconContainer}>
+                <MaterialIcons name="star" size={24} color={colors.primary} />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>
+                  アプリをレビューする
+                </Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  ストアで評価をお願いします
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <View style={[styles.divider, { backgroundColor: colors.border }]} />
+
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => handleOpenWebsite("https://guga.or.jp/")}
             >
               <View style={styles.settingIconContainer}>
                 <MaterialIcons name="open-in-new" size={24} color={colors.primary} />
               </View>
               <View style={styles.settingTextContainer}>
                 <Text style={[styles.settingLabel, { color: colors.text }]}>
-                  G検定公式サイト
+                  生成AIパスポート公式サイト
                 </Text>
                 <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
-                  JDLA公式サイトを開く
+                  公式サイトを開く
                 </Text>
               </View>
             </TouchableOpacity>
           </View>
         </View>
-        
+
         {showTimePicker && (
           <DateTimePicker
             mode="time"
@@ -317,9 +342,10 @@ export default function SettingsScreen() {
           />
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
+// End of SettingsScreen
 
 const styles = StyleSheet.create({
   container: {

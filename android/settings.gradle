@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'G検定合格ドリル'
+rootProject.name = '生成AIパスポート合格ドリル'
 
 dependencyResolutionManagement {
   versionCatalogs {

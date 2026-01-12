@@ -26,7 +26,7 @@ interface ProgressState {
   testHistory: TestResult[]; // 追加: テスト結果の履歴
   questionMastery: Record<number, boolean[]>; // 問題ごとの直近2回の正誤履歴
   questionsEverCorrect: Record<number, boolean>; // 1回でも正解したか
-  
+
   // Actions
   updateProgress: (data: {
     lastScore?: number;
@@ -40,7 +40,7 @@ interface ProgressState {
   getAverageScore: () => number | null;
   getChapterAverageScores: () => Record<string, number>;
   getTodayAnsweredCount: () => number;
-  getMasteryRate: (flashcards: {id: number, repetitions?: number}[], totalQuestions: number) => number;
+  getMasteryRate: (flashcards: { id: number, repetitions?: number }[], totalQuestions: number) => number;
 }
 
 export const useProgressStore = create<ProgressState>()(
@@ -55,22 +55,22 @@ export const useProgressStore = create<ProgressState>()(
       testHistory: [],
       questionMastery: {},
       questionsEverCorrect: {}, // 初期化
-      
+
       updateProgress: ({ lastScore, testCompleted, miniTestCompleted, answeredQuestions, chapterScores, testType }) => {
         const state = get();
         const updates: Partial<ProgressState> = {};
         const today = new Date().toISOString().split("T")[0];
         const currentMonth = today.slice(0, 7);
-        
+
         if (state.currentMonth !== currentMonth) {
           updates.monthlyLearningDays = 0;
           updates.currentMonth = currentMonth;
         }
-        
+
         if (lastScore !== undefined) {
           updates.lastScore = lastScore;
         }
-        
+
         if ((testCompleted || miniTestCompleted) && answeredQuestions && answeredQuestions.length > 0) {
           const newTest = {
             date: today,
@@ -109,7 +109,7 @@ export const useProgressStore = create<ProgressState>()(
             updates.lastStudyDate = today;
           }
         }
-        
+
         if (answeredQuestions && answeredQuestions.length > 0) {
           const newMastery = { ...state.questionMastery };
           answeredQuestions.forEach(q => {
@@ -128,10 +128,10 @@ export const useProgressStore = create<ProgressState>()(
           });
           updates.questionsEverCorrect = newEverCorrect;
         }
-        
+
         set(updates);
       },
-      
+
       resetProgress: () => {
         const currentMonth = new Date().toISOString().slice(0, 7);
         set({
@@ -146,29 +146,29 @@ export const useProgressStore = create<ProgressState>()(
           questionsEverCorrect: {}, // リセット時も空にする
         });
       },
-      
+
       // 直近3回のテスト平均スコアを計算
       getAverageScore: () => {
         const { testHistory } = get();
         if (testHistory.length === 0) return null;
-        
+
         // 直近3回のフルテストのみを対象
         const fullTests = testHistory
           .filter(test => test.type === 'full')
           .slice(-3);
-          
+
         if (fullTests.length === 0) return null;
-        
+
         const sum = fullTests.reduce((acc, test) => acc + test.score, 0);
         return Math.round(sum / fullTests.length);
       },
-      
+
       // 章ごとの直近3回の平均スコアを計算
       getChapterAverageScores: () => {
         const { testHistory } = get();
         const chapterScores: Record<string, number[]> = {};
         const result: Record<string, number> = {};
-        
+
         // 直近のテスト結果から章ごとのスコアを収集
         testHistory.slice(-3).forEach(test => {
           Object.entries(test.chapterScores).forEach(([chapter, score]) => {
@@ -178,7 +178,7 @@ export const useProgressStore = create<ProgressState>()(
             chapterScores[chapter].push(score);
           });
         });
-        
+
         // 各章の平均スコアを計算
         Object.entries(chapterScores).forEach(([chapter, scores]) => {
           if (scores.length > 0) {
@@ -186,10 +186,10 @@ export const useProgressStore = create<ProgressState>()(
             result[chapter] = Math.round(sum / scores.length);
           }
         });
-        
+
         return result;
       },
-      
+
       // 今日解いたクイズ数を返すgetter
       getTodayAnsweredCount: () => {
         const { testHistory } = get();
@@ -198,13 +198,13 @@ export const useProgressStore = create<ProgressState>()(
           .filter(test => test.date === today)
           .reduce((sum, test) => sum + (test.answeredCount || 0), 0);
       },
-      
+
       // 「習得済み率」を返すgetter（ロジック変更）
       getMasteryRate: (flashcards, totalQuestions) => {
         const { questionsEverCorrect } = get();
         // クイズ問題の習得数（1回でも正解）
         const masteredQuestions = Object.keys(questionsEverCorrect).length;
-        
+
         // フラッシュカードの習得数（repetitions >= 1）
         const masteredCards = flashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
 
@@ -215,7 +215,7 @@ export const useProgressStore = create<ProgressState>()(
       }
     }),
     {
-      name: "g-kentei-progress-v2",
+      name: "seisei-ai-passport-progress-v1",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

@@ -10,13 +10,13 @@ export default function TabLayout() {
   const { theme, colors } = useTheme();
   const windowWidth = Dimensions.get('window').width;
   const insets = useSafeAreaInsets();
-  
+
   // 画面サイズに基づいてアイコンとラベルのサイズを調整
   const getIconSize = () => {
     if (windowWidth < 350) return 18;
     return 20;
   };
-  
+
   const getLabelStyle = () => {
     if (windowWidth < 350) {
       return {
@@ -27,7 +27,7 @@ export default function TabLayout() {
       fontSize: 11,
     };
   };
-  
+
   return (
     <Tabs
       screenOptions={{
@@ -36,8 +36,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.background,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 85 : 60, // iOSでは安全領域を考慮
-          paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+          height: Platform.OS === 'ios' ? 85 : 60 + insets.bottom, // iOSでは安全領域を考慮
+          paddingBottom: Platform.OS === 'ios' ? 28 : 8 + insets.bottom,
           paddingTop: 6,
         },
         headerShown: true, // ヘッダーを表示
@@ -60,7 +60,7 @@ export default function TabLayout() {
         options={{
           title: "ホーム",
           tabBarIcon: ({ color }) => <MaterialIcons name="home" size={24} color={color} />,
-          headerTitle: "G検定合格ドリル",
+          headerTitle: "生成AIパスポート合格ドリル",
         }}
       />
       <Tabs.Screen

@@ -5,40 +5,42 @@ import { useTheme } from "@/context/theme-context";
 interface ProgressBarProps {
   progress: number;
   height?: number;
+  color?: string;
 }
 
-export default function ProgressBar({ progress, height = 8 }: ProgressBarProps) {
+export default function ProgressBar({ progress, height = 8, color }: ProgressBarProps) {
   const { colors } = useTheme();
-  
+
   // Ensure progress is between 0 and 100
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
-  
+
   // Determine color based on progress
   const getProgressColor = () => {
+    if (color) return color;
     if (clampedProgress >= 70) return colors.success;
     if (clampedProgress >= 40) return colors.primary;
     return colors.warning;
   };
-  
+
   return (
-    <View 
+    <View
       style={[
-        styles.container, 
-        { 
+        styles.container,
+        {
           backgroundColor: colors.border,
           height
         }
       ]}
     >
-      <View 
+      <View
         style={[
-          styles.progress, 
-          { 
+          styles.progress,
+          {
             width: `${clampedProgress}%`,
             backgroundColor: getProgressColor(),
             height
           }
-        ]} 
+        ]}
       />
     </View>
   );
