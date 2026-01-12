@@ -1,9 +1,9 @@
 import React, { useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   ScrollView,
   Platform
 } from "react-native";
@@ -15,27 +15,27 @@ import { LinearGradient } from "expo-linear-gradient";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ResultsScreen() {
-  const { 
-    score, 
-    total, 
-    correct, 
-    answered, 
-    testType 
-  } = useLocalSearchParams<{ 
-    score: string, 
-    total: string, 
-    correct: string, 
-    answered: string, 
-    testType: string 
+  const {
+    score,
+    total,
+    correct,
+    answered,
+    testType
+  } = useLocalSearchParams<{
+    score: string,
+    total: string,
+    correct: string,
+    answered: string,
+    testType: string
   }>();
-  
+
   const { colors } = useTheme();
-  
+
   const scoreNum = parseInt(score || "0", 10);
   const totalNum = parseInt(total || "0", 10);
   const correctNum = parseInt(correct || "0", 10);
   const answeredNum = parseInt(answered || "0", 10);
-  
+
   useEffect(() => {
     if (Platform.OS !== "web") {
       if (scoreNum >= 70) {
@@ -45,40 +45,40 @@ export default function ResultsScreen() {
       }
     }
   }, []);
-  
+
   const getScoreColor = () => {
     if (scoreNum >= 80) return colors.success;
     if (scoreNum >= 70) return colors.primary;
     if (scoreNum >= 60) return colors.warning;
     return colors.error;
   };
-  
+
   const getScoreMessage = () => {
     if (scoreNum >= 80) return "素晴らしい！";
     if (scoreNum >= 70) return "合格ライン！";
     if (scoreNum >= 60) return "もう少し！";
     return "頑張りましょう";
   };
-  
+
   const handleRetry = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-    
+
     if (testType === "full") {
       router.replace("/quiz/full-test");
     } else {
       router.replace("/quiz/mini-test");
     }
   };
-  
+
   const handleGoHome = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     router.replace("/quiz");
   };
-  
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -87,7 +87,7 @@ export default function ResultsScreen() {
             クイズ結果
           </Text>
         </View>
-        
+
         <View style={styles.scoreContainer}>
           <LinearGradient
             colors={[colors.card, colors.background]}
@@ -104,7 +104,7 @@ export default function ResultsScreen() {
             </View>
           </LinearGradient>
         </View>
-        
+
         <View style={styles.statsContainer}>
           <View style={[styles.statCard, { backgroundColor: colors.card }]}>
             <View style={styles.statItem}>
@@ -116,7 +116,7 @@ export default function ResultsScreen() {
                 正解
               </Text>
             </View>
-            
+
             <View style={styles.statItem}>
               <MaterialIcons name="cancel" size={24} color={colors.error} />
               <Text style={[styles.statValue, { color: colors.text }]}>
@@ -126,7 +126,7 @@ export default function ResultsScreen() {
                 不正解
               </Text>
             </View>
-            
+
             <View style={styles.statItem}>
               <MaterialIcons name="percent" size={24} color={colors.primary} />
               <Text style={[styles.statValue, { color: colors.text }]}>
@@ -138,7 +138,7 @@ export default function ResultsScreen() {
             </View>
           </View>
         </View>
-        
+
         <View style={styles.messageContainer}>
           {scoreNum >= 70 ? (
             <Text style={[styles.message, { color: colors.text }]}>
@@ -147,13 +147,13 @@ export default function ResultsScreen() {
             </Text>
           ) : (
             <Text style={[styles.message, { color: colors.text }]}>
-              G検定の合格ラインは70%です。
+              生成AIパスポートの合格ラインは70%です。
               苦手な分野を重点的に学習して、次回のテストに備えましょう。
               フラッシュカードで重要用語を復習することもおすすめです。
             </Text>
           )}
         </View>
-        
+
         <View style={styles.actionsContainer}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: colors.primary }]}

@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
   Alert,
   BackHandler,
   Platform,
   StatusBar,
   Dimensions,
-  SafeAreaView
 } from "react-native";
 import { router, useNavigation } from "expo-router";
 import { useTheme } from "@/context/theme-context";
@@ -18,7 +17,7 @@ import { useQuestionStore } from "@/stores/question-store";
 import { useProgressStore } from "@/stores/progress-store";
 import { MaterialIcons } from '@expo/vector-icons';
 import * as Haptics from "expo-haptics";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets, SafeAreaView } from "react-native-safe-area-context";
 import { Question } from "@/types/question";
 import QuestionView from "@/components/QuestionView";
 import ProgressBar from "@/components/ProgressBar";
@@ -34,7 +33,7 @@ export default function FullTestScreen() {
   const { colors } = useTheme();
   const { questions, getFullTestQuestions, saveTestProgress, loadTestProgress } = useQuestionStore();
   const { updateProgress } = useProgressStore();
-  
+
   const [testQuestions, setTestQuestions] = useState<Question[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<(number | null)[]>([]);
@@ -43,15 +42,15 @@ export default function FullTestScreen() {
   const [isActive, setIsActive] = useState(true);
   const [showSummary, setShowSummary] = useState(false);
   const [hasExistingTest, setHasExistingTest] = useState(false);
-  
+
   const timerRef = useRef<NodeJS.Timeout | number | null>(null);
   const windowWidth = Dimensions.get('window').width;
-  
+
   useEffect(() => {
     // Check for existing test
     const checkExistingTest = async () => {
       const savedTest = await loadTestProgress();
-      
+
       if (savedTest && savedTest.questions.length > 0) {
         setHasExistingTest(true);
         Alert.alert(
@@ -73,15 +72,15 @@ export default function FullTestScreen() {
         initializeNewTest();
       }
     };
-    
+
     checkExistingTest();
-    
+
     // Handle back button on Android
     const backHandler = BackHandler.addEventListener(
       "hardwareBackPress",
       handleBackPress
     );
-    
+
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -89,7 +88,7 @@ export default function FullTestScreen() {
       backHandler.remove();
     };
   }, []);
-  
+
   const initializeNewTest = () => {
     const fullTestQuestions = getFullTestQuestions(FULL_TEST_QUESTIONS);
     setTestQuestions(fullTestQuestions);
@@ -97,7 +96,7 @@ export default function FullTestScreen() {
     setFlagged(new Array(fullTestQuestions.length).fill(false));
     startTimer();
   };
-  
+
   const resumeTest = (savedTest: any) => {
     setTestQuestions(savedTest.questions);
     setAnswers(savedTest.answers);
@@ -106,7 +105,7 @@ export default function FullTestScreen() {
     setCurrentIndex(savedTest.currentIndex);
     startTimer();
   };
-  
+
   const startTimer = () => {
     setIsActive(true);
     timerRef.current = setInterval(() => {
@@ -119,24 +118,24 @@ export default function FullTestScreen() {
       });
     }, 1000);
   };
-  
+
   const handleTimeUp = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    
+
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     }
-    
+
     Alert.alert(
       "時間終了",
       "制限時間が終了しました。結果を確認しましょう。",
       [{ text: "結果を見る", onPress: handleFinishTest }]
     );
   };
-  
+
   const handleBackPress = () => {
     if (isActive) {
       Alert.alert(
@@ -151,12 +150,12 @@ export default function FullTestScreen() {
     }
     return false;
   };
-  
+
   const handleSaveAndExit = async () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    
+
     await saveTestProgress({
       questions: testQuestions,
       answers,
@@ -164,85 +163,85 @@ export default function FullTestScreen() {
       timeRemaining,
       currentIndex
     });
-    
+
     router.back();
   };
-  
+
   const handleSelectAnswer = (questionIndex: number, answerIndex: number) => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    
+
     const newAnswers = [...answers];
     newAnswers[questionIndex] = answerIndex;
     setAnswers(newAnswers);
   };
-  
+
   const handleToggleFlag = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
-    
+
     const newFlagged = [...flagged];
     newFlagged[currentIndex] = !newFlagged[currentIndex];
     setFlagged(newFlagged);
   };
-  
+
   const handlePrevQuestion = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
   };
-  
+
   const handleNextQuestion = () => {
     if (currentIndex < testQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
     }
   };
-  
+
   const handleShowSummary = () => {
     setShowSummary(true);
   };
-  
+
   const handleHideSummary = () => {
     setShowSummary(false);
   };
-  
+
   const handleFinishTest = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
     setIsActive(false);
-    
+
     // Calculate results
     const totalQuestions = testQuestions.length;
     const answeredQuestions = answers.filter(a => a !== null).length;
-    const correctAnswers = answers.filter((answer, index) => 
+    const correctAnswers = answers.filter((answer, index) =>
       answer === testQuestions[index].answerIndex
     ).length;
     const score = Math.round((correctAnswers / totalQuestions) * 100);
-    
+
     // 章ごとの正解率を計算
     const chapterScores: Record<string, number> = {};
     const chapterQuestions: Record<string, { total: number, correct: number }> = {};
-    
+
     testQuestions.forEach((q, i) => {
       if (!chapterQuestions[q.chapter]) {
         chapterQuestions[q.chapter] = { total: 0, correct: 0 };
       }
-      
+
       chapterQuestions[q.chapter].total += 1;
       if (answers[i] === q.answerIndex) {
         chapterQuestions[q.chapter].correct += 1;
       }
     });
-    
+
     // 章ごとのスコアを計算
     Object.entries(chapterQuestions).forEach(([chapter, data]) => {
       chapterScores[chapter] = Math.round((data.correct / data.total) * 100);
     });
-    
+
     // Update progress
     updateProgress({
       lastScore: score,
@@ -255,7 +254,7 @@ export default function FullTestScreen() {
       chapterScores,
       testType: 'full'
     });
-    
+
     // Navigate to results
     router.push({
       pathname: "/quiz/results",
@@ -268,11 +267,11 @@ export default function FullTestScreen() {
       }
     });
   };
-  
+
   const renderSummary = () => {
     const answeredCount = answers.filter(a => a !== null).length;
     const flaggedCount = flagged.filter(f => f).length;
-    
+
     return (
       <SafeAreaView style={[styles.summaryContainer, { backgroundColor: colors.background }]}>
         <View style={styles.summaryHeader}>
@@ -285,12 +284,12 @@ export default function FullTestScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-        
+
         <Text style={[styles.summaryStats, { color: colors.textSecondary }]}>
-          回答済み: {answeredCount}/{testQuestions.length} • 
+          回答済み: {answeredCount}/{testQuestions.length} •
           フラグ付き: {flaggedCount}
         </Text>
-        
+
         <ScrollView style={styles.questionGrid}>
           <View style={styles.gridContainer}>
             {testQuestions.map((_, index) => (
@@ -307,7 +306,7 @@ export default function FullTestScreen() {
                   handleHideSummary();
                 }}
               >
-                <Text 
+                <Text
                   style={[
                     styles.questionNumber,
                     { color: answers[index] !== null ? colors.primary : colors.text }
@@ -319,7 +318,7 @@ export default function FullTestScreen() {
             ))}
           </View>
         </ScrollView>
-        
+
         <View style={styles.summaryActions}>
           <TouchableOpacity
             style={[styles.finishButton, { backgroundColor: colors.primary }]}
@@ -332,7 +331,7 @@ export default function FullTestScreen() {
       </SafeAreaView>
     );
   };
-  
+
   if (testQuestions.length === 0) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
@@ -342,14 +341,23 @@ export default function FullTestScreen() {
       </View>
     );
   }
-  
+
   const currentQuestion = testQuestions[currentIndex];
   const isLastQuestion = currentIndex === testQuestions.length - 1;
   const answeredCount = answers.filter(a => a !== null).length;
   const isTimeWarning = timeRemaining < 300; // Less than 5 minutes
-  
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}> 
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.background,
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom
+        }
+      ]}
+    >
       {showSummary ? (
         renderSummary()
       ) : (
@@ -364,26 +372,26 @@ export default function FullTestScreen() {
             insets={insets}
             formatTime={formatTime}
           />
-          
+
           <View style={styles.progressContainer}>
-            <ProgressBar 
-              progress={(currentIndex / (testQuestions.length - 1)) * 100} 
+            <ProgressBar
+              progress={(currentIndex / (testQuestions.length - 1)) * 100}
               height={4}
             />
           </View>
-          
+
           <View style={styles.questionContainer}>
             <Text style={[styles.questionNumber, { color: colors.textSecondary }]}>
               問題 {currentIndex + 1} / {testQuestions.length}
             </Text>
-            
+
             <QuestionView
               question={currentQuestion}
               onSelectAnswer={(index, isCorrect) => handleSelectAnswer(currentIndex, index)}
               feedbackStatus={null}
             />
           </View>
-          
+
           <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 16) }]}>
             <TouchableOpacity
               style={[
@@ -399,7 +407,7 @@ export default function FullTestScreen() {
                 前へ
               </Text>
             </TouchableOpacity>
-            
+
             {isLastQuestion ? (
               <TouchableOpacity
                 style={[styles.finishButton, { backgroundColor: colors.primary }]}
@@ -424,7 +432,7 @@ export default function FullTestScreen() {
           </View>
         </>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 

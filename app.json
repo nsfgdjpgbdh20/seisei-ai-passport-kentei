@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "G検定合格ドリル",
+    "name": "生成AIパスポート合格ドリル",
     "slug": "g-kentei-gokaku-doriru",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.shunnakayama.g-kentei-gokaku-doriru",
+      "bundleIdentifier": "app.shunnakayama.seisei-ai-passport-drill",
       "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -26,7 +26,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.shunnakayama.g_kentei_gokaku_doriru"
+      "package": "app.shunnakayama.seisei_ai_passport_drill"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"

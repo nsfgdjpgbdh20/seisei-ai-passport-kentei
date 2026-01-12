@@ -10,12 +10,12 @@ interface FlashcardState {
   initialized: boolean;
   studiedToday: number[]; // 今日学習したカードID
   lastStudiedDate: string | null; // 最後に学習した日付
-  
+
   // Computed
   dueCards: Flashcard[];
   totalMastered: () => number;
   getTodayStudiedCount: () => number;
-  
+
   // Actions
   loadFlashcards: () => void;
   getDueCardsByChapter: (chapter: string | null) => Flashcard[];
@@ -31,7 +31,7 @@ export const useFlashcardStore = create<FlashcardState>()(
       initialized: false,
       studiedToday: [],
       lastStudiedDate: null,
-      
+
       get dueCards() {
         const flashcards = get().flashcards;
         const today = new Date();
@@ -42,31 +42,44 @@ export const useFlashcardStore = create<FlashcardState>()(
         if (due.length === 0) return [...flashcards];
         return due;
       },
-      
+
       totalMastered: () => {
         const flashcards = get().flashcards;
         return flashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
       },
-      
+
       getTodayStudiedCount: () => {
         const { studiedToday } = get();
         return studiedToday.length;
       },
-      
+
       loadFlashcards: () => {
         const { initialized, flashcards } = get();
-        const targetCount = 100; // 期待するカード数
 
-        // 初期化済みだがカード数が違う場合、強制的に再読み込み
-        if (initialized && flashcards.length !== targetCount) {
-            // このまま下の処理に進み、サンプルデータをロードする
-        }
-        // 初期化済みでカード数も正しい場合は何もしない
-        else if (initialized) {
+        // すでにデータがある場合でも、新しいカードが追加されているかチェックする
+        if (flashcards.length > 0) {
+          const existingIds = new Set(flashcards.map(c => c.id));
+          const newCards = sampleFlashcards.filter(c => !existingIds.has(c.id)).map(card => ({
+            ...card,
+            nextReview: undefined,
+            interval: undefined,
+            repetitions: undefined,
+            easeFactor: undefined
+          }));
+
+          if (newCards.length > 0) {
+
+            set({
+              flashcards: [...flashcards, ...newCards],
+              initialized: true
+            });
+          } else if (!initialized) {
+            set({ initialized: true });
+          }
           return;
         }
 
-        // 初回ロード、または強制再読み込みの場合
+        // データがない場合のみ、全サンプルデータをロードする
         const loadedCards = sampleFlashcards.map(card => ({
           ...card,
           nextReview: undefined,
@@ -76,38 +89,38 @@ export const useFlashcardStore = create<FlashcardState>()(
         }));
         set({
           flashcards: loadedCards,
-          initialized: true // initialized は true に設定
+          initialized: true
         });
       },
-      
+
       getDueCardsByChapter: (chapter) => {
         const { flashcards, initialized } = get();
-        
+
         // 初期化されていない場合は初期化
         if (!initialized) {
           get().loadFlashcards();
         }
-        
+
         const today = new Date();
-        
+
         // フィルタリング
         const filteredCards = flashcards.filter(card => {
           // 学習予定かどうか
           const isDue = !card.nextReview || new Date(card.nextReview) <= today;
           // 章でフィルタリング
           const isChapterMatch = chapter === null || card.chapter === chapter;
-          
+
           return isDue && isChapterMatch;
         });
-        
+
         // 学習予定のカードがない場合は、全てのカードを返す（初回学習用）
         if (filteredCards.length === 0) {
           return flashcards.filter(card => chapter === null || card.chapter === chapter);
         }
-        
+
         return filteredCards;
       },
-      
+
       updateCardProgress: (id: number, quality: number) =>
         set((state) => {
           // 日付が変わったらstudiedTodayをリセット
@@ -152,7 +165,7 @@ export const useFlashcardStore = create<FlashcardState>()(
           });
           return { ...state, flashcards: newFlashcards, studiedToday, lastStudiedDate };
         }),
-      
+
       resetFlashcards: () => {
         // Reset progress but keep the cards
         const { flashcards } = get();
@@ -165,7 +178,7 @@ export const useFlashcardStore = create<FlashcardState>()(
         }));
         set({ flashcards: resetCards, studiedToday: [], lastStudiedDate: null });
       },
-      
+
       addFlashcard: (term, definition, chapter) => {
         const { flashcards } = get();
         const maxId = flashcards.length > 0 ? Math.max(...flashcards.map(card => card.id)) : 0;
@@ -179,7 +192,7 @@ export const useFlashcardStore = create<FlashcardState>()(
       },
     }),
     {
-      name: "g-kentei-flashcards-v5",
+      name: "seisei-ai-passport-flashcards-v1",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

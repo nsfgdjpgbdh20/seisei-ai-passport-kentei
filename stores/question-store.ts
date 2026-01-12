@@ -6,8 +6,8 @@ import { sampleQuestions } from "@/data/sample-questions";
 
 // --- AsyncStorage デバッグクリア --- 削除
 // // この行は問題解決後に必ず削除してください！
-// AsyncStorage.removeItem("g-kentei-questions-v3");
-// AsyncStorage.removeItem("g-kentei-progress-v2"); // 念のためprogressストアもクリア
+// AsyncStorage.removeItem("seisei-ai-passport-questions-v1");
+// AsyncStorage.removeItem("seisei-ai-passport-progress-v1"); // 念のためprogressストアもクリア
 // console.log("Cleared AsyncStorage keys for debugging.");
 // --------------------------------
 
@@ -21,7 +21,7 @@ interface QuestionState {
     timeRemaining: number;
     currentIndex: number;
   } | null;
-  
+
   // Actions
   loadQuestions: () => void;
   setQuestions: (questions: Question[], version: string) => void;
@@ -36,63 +36,67 @@ export const useQuestionStore = create<QuestionState>()(
   persist(
     (set, get) => ({
       questions: [],
-      version: "1.0.0",
+      version: "1.0.1",
       testProgress: null,
-      
+
       loadQuestions: () => {
-        // If no questions are loaded, use sample questions
-        if (get().questions.length === 0) {
-          set({ questions: sampleQuestions, version: "1.0.0" });
+        const currentVersion = "1.0.1";
+        const state = get();
+
+        // If no questions are loaded OR version mismatch, reload from sample questions
+        if (state.questions.length === 0 || state.version !== currentVersion) {
+          console.log(`Reloading questions. Store version: ${state.version}, Current version: ${currentVersion}`);
+          set({ questions: sampleQuestions, version: currentVersion });
         }
       },
-      
+
       setQuestions: (questions, version) => {
         set({ questions, version });
       },
-      
+
       getFullTestQuestions: (count) => {
         const { questions } = get();
-        
+
         // If not enough questions, return all available
         if (questions.length <= count) {
           return [...questions];
         }
-        
+
         // Shuffle and select questions
         return shuffleArray([...questions]).slice(0, count);
       },
-      
+
       getMiniTestQuestions: (count, chapter = null) => {
         const { questions } = get();
-        
+
         // Filter by chapter if specified
-        const filteredQuestions = chapter 
+        const filteredQuestions = chapter
           ? questions.filter(q => q.chapter === chapter)
           : questions;
-        
+
         // If not enough questions, return all available
         if (filteredQuestions.length <= count) {
           return [...filteredQuestions];
         }
-        
+
         // Shuffle and select questions
         return shuffleArray([...filteredQuestions]).slice(0, count);
       },
-      
+
       saveTestProgress: async (progress) => {
         set({ testProgress: progress });
       },
-      
+
       loadTestProgress: async () => {
         return get().testProgress;
       },
-      
+
       resetQuestions: () => {
         set({ testProgress: null });
       },
     }),
     {
-      name: "g-kentei-questions-v4",
+      name: "seisei-ai-passport-questions-v1",
       storage: createJSONStorage(() => AsyncStorage),
     }
   )

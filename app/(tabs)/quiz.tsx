@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { router } from "expo-router";
 import { useTheme } from "@/context/theme-context";
 import { useQuestionStore } from "@/stores/question-store";
@@ -18,20 +18,20 @@ export default function QuizScreen() {
   const { chapterProgress, lastScore, questionMastery, questionsEverCorrect } = useProgressStore();
   const { selectedQuizChapter, setSelectedQuizChapter } = useUIStateStore();
   const insets = useSafeAreaInsets();
-  
+
   const totalCount = questions.length;
   const masteredCount = Object.keys(questionsEverCorrect).filter(id =>
     questions.some(q => q.id === parseInt(id, 10))
   ).length;
   const unmasteredCount = totalCount - masteredCount;
-  
+
   const handleStartFullTest = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
     router.push("/quiz/full-test");
   };
-  
+
   const handleStartMiniTest = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -41,9 +41,9 @@ export default function QuizScreen() {
       params: { chapter: selectedQuizChapter || "random" }
     });
   };
-  
+
   const chapters = CHAPTERS;
-  
+
   const questionCountByChapter = chapters.map(chapter => {
     if (questions.length === 0) {
       return { chapter, totalCount: '-', masteredCount: '-' };
@@ -62,9 +62,9 @@ export default function QuizScreen() {
       masteredCount: masteredChapterCount
     };
   });
-  
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <CommonHeader title="" />
       <ScrollView
         contentContainerStyle={[
@@ -173,9 +173,10 @@ export default function QuizScreen() {
           </Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
+// End of QuizScreen
 
 const styles = StyleSheet.create({
   container: {

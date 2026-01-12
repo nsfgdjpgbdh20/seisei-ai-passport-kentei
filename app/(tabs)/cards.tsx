@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { router, useFocusEffect } from "expo-router";
 import { useTheme } from "@/context/theme-context";
 import { useFlashcardStore } from "@/stores/flashcard-store";
@@ -12,41 +12,41 @@ import { CHAPTERS } from "@/constants/chapters";
 
 export default function CardsScreen() {
   const { colors } = useTheme();
-  const { 
-    flashcards, 
-    dueCards, 
+  const {
+    flashcards,
+    dueCards,
     totalMastered,
     loadFlashcards,
     getDueCardsByChapter
   } = useFlashcardStore();
   const insets = useSafeAreaInsets();
-  
+
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
-  
+
   useFocusEffect(
     useCallback(() => {
       loadFlashcards();
     }, [])
   );
-  
+
   const handleStartFlashcards = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     // 「全分野」選択時は chapter="random" を渡す
     const studyChapterParam = selectedChapter === null ? "random" : selectedChapter;
-    
+
     router.push({
       pathname: "/cards/study",
       params: { chapter: studyChapterParam }
     });
   };
-  
+
   const chapters = CHAPTERS;
-  
+
   // 総カード数
   const totalCount = flashcards.length;
-  
+
   // 分野ごとの件数もflashcardsからのみ取得
   const dueCardsByChapter = chapters.map(chapter => {
     if (flashcards.length === 0) {
@@ -59,7 +59,7 @@ export default function CardsScreen() {
       masteredCount: flashcards.filter(card => card.chapter === chapter && (card.repetitions ?? 0) >= 1).length
     };
   });
-  
+
   // 変更: ボタンに表示する枚数計算ロジックを study.tsx と統一
   const calculateNumberOfCardsForButton = () => {
     if (selectedChapter === null) {
@@ -69,7 +69,7 @@ export default function CardsScreen() {
       // 特定分野の場合
       const chapterCards = flashcards.filter(card => card.chapter === selectedChapter);
       const unmasteredCards = chapterCards.filter(card => (card.repetitions ?? 0) < 1);
-      
+
       if (unmasteredCards.length > 0) {
         // 未習得カードがあれば、その枚数 (最大10枚)
         return Math.min(unmasteredCards.length, 10);
@@ -90,9 +90,9 @@ export default function CardsScreen() {
   const debugMastered = flashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
   const masteredCount = flashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
   const unmasteredCount = totalCount - masteredCount;
-  
+
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <CommonHeader title="" />
       <ScrollView
         contentContainerStyle={[
@@ -127,7 +127,7 @@ export default function CardsScreen() {
             </View>
           </View>
         </View>
-        
+
         <View style={styles.chapterSelector}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>分野を選択</Text>
           <View style={styles.chapterList}>
@@ -177,7 +177,7 @@ export default function CardsScreen() {
             ))}
           </View>
         </View>
-        
+
         {!hasCardsToStudy && (
           <View style={[styles.emptyStateCard, { backgroundColor: colors.card }]}>
             <MaterialIcons name="info" size={24} color={colors.primary} />
@@ -204,9 +204,10 @@ export default function CardsScreen() {
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
+// End of CardsScreen
 
 const styles = StyleSheet.create({
   container: {
