@@ -9,6 +9,7 @@ let isIapReady = false;
 let initIapPromise: Promise<boolean> | null = null;
 let productFetchPromise: Promise<Product[]> | null = null;
 let productFetchKey = "";
+const IOS_PRODUCT_RESOLVE_RETRY_DELAY_MS = 1200;
 
 const executionEnvironment = Constants.executionEnvironment;
 const appOwnership = Constants.appOwnership ?? null;
@@ -26,6 +27,29 @@ const toPurchaseList = (
   }
   return Array.isArray(value) ? value : [value];
 };
+
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const getProductIdentifier = (product: Product): string | null => {
+  const productIdCandidate =
+    (product as { productId?: unknown }).productId ??
+    (product as { id?: unknown }).id;
+
+  if (typeof productIdCandidate !== "string") {
+    return null;
+  }
+
+  return productIdCandidate;
+};
+
+const hasResolvedProduct = (
+  targetProductId: string,
+  products: Product[]
+): boolean =>
+  products.some((product) => getProductIdentifier(product) === targetProductId);
 
 const loadIapModule = async (): Promise<IapModule | null> => {
   if (!canUseIap) {
@@ -142,6 +166,17 @@ export const requestPackPurchase = async (
   const isConnected = await initIap();
   if (!isConnected) {
     return [];
+  }
+
+  let products = await fetchProducts([productId]);
+  if (!hasResolvedProduct(productId, products)) {
+    await sleep(IOS_PRODUCT_RESOLVE_RETRY_DELAY_MS);
+    products = await fetchProducts([productId]);
+  }
+  if (!hasResolvedProduct(productId, products)) {
+    throw new Error(
+      `購入商品を取得できませんでした（${productId}）。App Store Connect の Product ID 設定と TestFlight ビルドを確認して再試行してください。`
+    );
   }
 
   const purchaseResult = await iap.requestPurchase({

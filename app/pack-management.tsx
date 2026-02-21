@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -155,6 +155,7 @@ export default function PackManagementScreen() {
     isPurchasing,
     isRestoring,
     purchaseError,
+    initializeStore,
     purchaseQuestionPack,
     purchaseFlashcardPack,
     restorePurchases,
@@ -163,6 +164,10 @@ export default function PackManagementScreen() {
     isQuestionPackOwned,
     isFlashcardPackOwned,
   } = usePurchaseStore();
+
+  useEffect(() => {
+    void initializeStore();
+  }, [initializeStore]);
 
   const productPriceMap = useMemo(() => {
     const entries: Array<[string, string]> = [];

@@ -8,6 +8,7 @@ import { FlashcardPack } from "@/types/flashcard";
 import { sampleQuestionPacks } from "@/data/sample-question-packs";
 import { sampleFlashcardPacks } from "@/data/sample-flashcard-packs";
 import {
+  fetchProducts,
   getIapUnsupportedMessage,
   initIap,
   isIapRuntimeSupported,
@@ -344,9 +345,8 @@ export const usePurchaseStore = create<PurchaseState>()(
 
         set({ isLoadingProducts: true });
         try {
-          // 価格はパック定義の固定値(¥100)を表示するため、商品一覧APIは呼ばない。
-          // シミュレーター/開発環境での getItems 競合クラッシュを避ける。
-          set({ products: [], purchaseError: null });
+          const products = await fetchProducts(IAP_PRODUCT_IDS);
+          set({ products, purchaseError: null });
         } finally {
           set({ isLoadingProducts: false });
         }
