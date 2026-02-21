@@ -8,71 +8,98 @@ import {
   Alert,
   ScrollView,
   Platform,
-  Linking
+  Linking,
 } from "react-native";
+import { router } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialIcons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
+import * as StoreReview from "expo-store-review";
+
 import { useTheme } from "@/context/theme-context";
 import { useNotificationStore } from "@/stores/notification-store";
 import { useProgressStore } from "@/stores/progress-store";
-import { useQuestionStore } from "@/stores/question-store";
 import { useFlashcardStore } from "@/stores/flashcard-store";
-import { MaterialIcons } from '@expo/vector-icons';
-import * as Haptics from "expo-haptics";
-import DateTimePicker from "@/components/DateTimePicker";
-import { scheduleNotification, cancelAllNotifications } from "@/utils/notifications";
+import { usePurchaseStore } from "@/stores/purchase-store";
 import { checkForQuestionUpdates } from "@/utils/question-updater";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import CommonHeader from "../../components/CommonHeader";
-import { sampleQuestions } from "@/data/sample-questions";
-import { sampleFlashcards } from "@/data/sample-flashcards";
-import * as StoreReview from 'expo-store-review';
+import { scheduleNotification, cancelAllNotifications } from "@/utils/notifications";
+import DateTimePicker from "@/components/DateTimePicker";
+import CommonHeader from "@/components/CommonHeader";
 
-export default function SettingsScreen() {
+// ハプティックフィードバックを実行（Web以外）
+function triggerHaptic(style: Haptics.ImpactFeedbackStyle = Haptics.ImpactFeedbackStyle.Light): void {
+  if (Platform.OS !== "web") {
+    Haptics.impactAsync(style);
+  }
+}
+
+// 外部URLを開く
+function openExternalUrl(url: string): void {
+  Linking.openURL(url).catch((err) => {
+    console.error("リンクを開けませんでした:", err);
+  });
+}
+
+// 生成AIパスポート公式サイトURL
+const OFFICIAL_WEBSITE_URL = "https://guga.or.jp/";
+
+export default function SettingsScreen(): React.JSX.Element {
   const { theme, colors, toggleTheme } = useTheme();
-  const {
-    notificationsEnabled,
-    notificationTime,
-    toggleNotifications,
-    setNotificationTime
-  } = useNotificationStore();
-
+  const { notificationsEnabled, notificationTime, toggleNotifications, setNotificationTime } =
+    useNotificationStore();
   const { resetProgress } = useProgressStore();
   const { resetFlashcards } = useFlashcardStore();
-  const { resetQuestions } = useQuestionStore();
+  const {
+    selectedQuestionPackId,
+    selectedFlashcardPackId,
+    availableQuestionPacks,
+    availableFlashcardPacks,
+  } = usePurchaseStore();
   const insets = useSafeAreaInsets();
 
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const selectedQuestionPackLabel =
+    selectedQuestionPackId === null
+      ? "購入済みの全問題パック"
+      : availableQuestionPacks.find((pack) => pack.id === selectedQuestionPackId)
+          ?.title ?? "選択中の問題パック";
+  const selectedFlashcardPackLabel =
+    selectedFlashcardPackId === null
+      ? "購入済みの全カードパック"
+      : availableFlashcardPacks.find((pack) => pack.id === selectedFlashcardPackId)
+          ?.title ?? "選択中のカードパック";
 
-  const handleToggleNotifications = async () => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
-    const newValue = !notificationsEnabled;
+  // 通知設定の切り替え
+  function handleToggleNotifications(): void {
+    triggerHaptic();
+    const newEnabled = !notificationsEnabled;
     toggleNotifications();
 
+    // 設定変更時に即座に通知をスケジュール/キャンセル
     if (Platform.OS !== "web") {
-      if (newValue) {
+      if (newEnabled) {
         scheduleNotification(notificationTime);
       } else {
         cancelAllNotifications();
       }
     }
-  };
+  }
 
-  const handleTimeChange = (time: string) => {
+  // 通知時刻の変更
+  function handleTimeChange(time: string): void {
     setNotificationTime(time);
     setShowTimePicker(false);
 
+    // 通知が有効な場合、新しい時刻で再スケジュール
     if (Platform.OS !== "web" && notificationsEnabled) {
       scheduleNotification(time);
     }
-  };
+  }
 
-  const handleResetProgress = () => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    }
+  // 進捗リセットの確認と実行
+  function handleResetProgress(): void {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
 
     Alert.alert(
       "進捗をリセット",
@@ -86,31 +113,22 @@ export default function SettingsScreen() {
             resetProgress();
             resetFlashcards();
             Alert.alert("リセット完了", "学習進捗がリセットされました。");
-          }
-        }
+          },
+        },
       ]
     );
-  };
+  }
 
-  const handleCheckForUpdates = async () => {
-    if (Platform.OS !== "web") {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-
+  // 問題データの更新チェック
+  async function handleCheckForUpdates(): Promise<void> {
+    triggerHaptic();
     setIsUpdating(true);
 
     try {
-      // 更新チェック処理を実行
-      const result = await checkForQuestionUpdates();
-
-      // 常に「更新なし」と表示（モック実装のため）
-      Alert.alert(
-        "更新確認",
-        "問題データは最新です。",
-        [{ text: "OK" }]
-      );
+      await checkForQuestionUpdates();
+      Alert.alert("更新確認", "問題データは最新です。", [{ text: "OK" }]);
     } catch (error) {
-      console.error("Update check failed:", error);
+      console.error("更新チェックに失敗:", error);
       Alert.alert(
         "更新エラー",
         "問題データの確認中にエラーが発生しました。ネットワーク接続を確認してください。",
@@ -119,18 +137,51 @@ export default function SettingsScreen() {
     } finally {
       setIsUpdating(false);
     }
-  };
+  }
 
-  const handleOpenWebsite = (url: string) => {
-    Linking.openURL(url).catch(err => {
-      console.error("リンクを開けませんでした:", err);
-    });
-  };
+  // ストアレビューをリクエスト
+  async function handleRequestReview(): Promise<void> {
+    const isAvailable = await StoreReview.isAvailableAsync();
+    if (isAvailable) {
+      StoreReview.requestReview();
+    } else {
+      Alert.alert("レビュー", "ストアのレビュー画面を開けませんでした。");
+    }
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background, paddingTop: insets.top }]}>
       <CommonHeader title="" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>
+            問題パック管理
+          </Text>
+
+          <View style={[styles.settingCard, { backgroundColor: colors.card }]}>
+            <TouchableOpacity
+              style={styles.settingRow}
+              onPress={() => router.push("/pack-management" as any)}
+            >
+              <View style={styles.settingIconContainer}>
+                <MaterialIcons name="inventory-2" size={24} color={colors.primary} />
+              </View>
+              <View style={styles.settingTextContainer}>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>
+                  問題パック管理
+                </Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  クイズ: {selectedQuestionPackLabel}
+                </Text>
+                <Text style={[styles.settingDescription, { color: colors.textSecondary }]}>
+                  カード: {selectedFlashcardPackLabel}
+                </Text>
+              </View>
+              <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>
             アプリ設定
@@ -289,16 +340,7 @@ export default function SettingsScreen() {
 
             <View style={[styles.divider, { backgroundColor: colors.border }]} />
 
-            <TouchableOpacity
-              style={styles.settingRow}
-              onPress={async () => {
-                if (await StoreReview.isAvailableAsync()) {
-                  StoreReview.requestReview();
-                } else {
-                  Alert.alert("レビュー", "ストアのレビュー画面を開けませんでした。");
-                }
-              }}
-            >
+            <TouchableOpacity style={styles.settingRow} onPress={handleRequestReview}>
               <View style={styles.settingIconContainer}>
                 <MaterialIcons name="star" size={24} color={colors.primary} />
               </View>
@@ -316,7 +358,7 @@ export default function SettingsScreen() {
 
             <TouchableOpacity
               style={styles.settingRow}
-              onPress={() => handleOpenWebsite("https://guga.or.jp/")}
+              onPress={() => openExternalUrl(OFFICIAL_WEBSITE_URL)}
             >
               <View style={styles.settingIconContainer}>
                 <MaterialIcons name="open-in-new" size={24} color={colors.primary} />
@@ -345,7 +387,6 @@ export default function SettingsScreen() {
     </View>
   );
 }
-// End of SettingsScreen
 
 const styles = StyleSheet.create({
   container: {

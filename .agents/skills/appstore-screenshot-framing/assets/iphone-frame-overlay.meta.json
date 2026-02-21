@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "frame": {
+    "width": 930,
+    "height": 1900
+  },
+  "screen_rect": {
+    "x": 40,
+    "y": 58,
+    "width": 850,
+    "height": 1790,
+    "radius": 96
+  }
+}

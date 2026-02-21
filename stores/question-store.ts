@@ -3,6 +3,10 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Question } from "@/types/question";
 import { sampleQuestions } from "@/data/sample-questions";
+import {
+  getTargetQuestionPackIdsFromState,
+  usePurchaseStore,
+} from "@/stores/purchase-store";
 
 // --- AsyncStorage デバッグクリア --- 削除
 // // この行は問題解決後に必ず削除してください！
@@ -36,11 +40,11 @@ export const useQuestionStore = create<QuestionState>()(
   persist(
     (set, get) => ({
       questions: [],
-      version: "1.0.1",
+      version: "1.1.0",
       testProgress: null,
 
       loadQuestions: () => {
-        const currentVersion = "1.0.1";
+        const currentVersion = "1.1.0";
         const state = get();
 
         // If no questions are loaded OR version mismatch, reload from sample questions
@@ -56,23 +60,44 @@ export const useQuestionStore = create<QuestionState>()(
 
       getFullTestQuestions: (count) => {
         const { questions } = get();
+        const purchaseState = usePurchaseStore.getState();
+        const targetPackIds = getTargetQuestionPackIdsFromState(
+          purchaseState.selectedQuestionPackId,
+          purchaseState.ownedQuestionPackIds
+        );
+
+        const availableQuestions = questions.filter((question) =>
+          targetPackIds.includes(question.packId)
+        );
+        const targetQuestions =
+          availableQuestions.length > 0 ? availableQuestions : questions;
 
         // If not enough questions, return all available
-        if (questions.length <= count) {
-          return [...questions];
+        if (targetQuestions.length <= count) {
+          return [...targetQuestions];
         }
 
         // Shuffle and select questions
-        return shuffleArray([...questions]).slice(0, count);
+        return shuffleArray([...targetQuestions]).slice(0, count);
       },
 
       getMiniTestQuestions: (count, chapter = null) => {
         const { questions } = get();
+        const purchaseState = usePurchaseStore.getState();
+        const targetPackIds = getTargetQuestionPackIdsFromState(
+          purchaseState.selectedQuestionPackId,
+          purchaseState.ownedQuestionPackIds
+        );
+        const packFilteredQuestions = questions.filter((question) =>
+          targetPackIds.includes(question.packId)
+        );
+        const scopedQuestions =
+          packFilteredQuestions.length > 0 ? packFilteredQuestions : questions;
 
         // Filter by chapter if specified
         const filteredQuestions = chapter
-          ? questions.filter(q => q.chapter === chapter)
-          : questions;
+          ? scopedQuestions.filter(q => q.chapter === chapter)
+          : scopedQuestions;
 
         // If not enough questions, return all available
         if (filteredQuestions.length <= count) {

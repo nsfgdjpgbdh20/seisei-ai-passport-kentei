@@ -1,0 +1,4 @@
+interface:
+  display_name: "Drill Pack Feature"
+  short_description: "RNドリルアプリへ追加問題パック機能を半自動移植"
+  default_prompt: "既存のExpo/React Nativeドリルアプリへ、iOS向け追加問題パック機能（IAP購入・復元・出題範囲切替・設定導線）をこのスキルに沿って実装してください。"

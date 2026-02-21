@@ -4,6 +4,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Flashcard } from "@/types/flashcard";
 import { sampleFlashcards } from "@/data/sample-flashcards";
 import dayjs from "dayjs";
+import {
+  getTargetFlashcardPackIdsFromState,
+  usePurchaseStore,
+} from "@/stores/purchase-store";
 
 interface FlashcardState {
   flashcards: Flashcard[];
@@ -18,7 +22,8 @@ interface FlashcardState {
 
   // Actions
   loadFlashcards: () => void;
-  getDueCardsByChapter: (chapter: string | null) => Flashcard[];
+  getScopedCards: (packIds?: string[]) => Flashcard[];
+  getDueCardsByChapter: (chapter: string | null, packIds?: string[]) => Flashcard[];
   updateCardProgress: (id: number, quality: number) => void;
   resetFlashcards: () => void;
   addFlashcard: (term: string, definition: string, chapter: string) => void;
@@ -93,7 +98,20 @@ export const useFlashcardStore = create<FlashcardState>()(
         });
       },
 
-      getDueCardsByChapter: (chapter) => {
+      getScopedCards: (packIds = []) => {
+        const { flashcards } = get();
+        if (packIds.length === 0) {
+          const purchaseState = usePurchaseStore.getState();
+          const targetPackIds = getTargetFlashcardPackIdsFromState(
+            purchaseState.selectedFlashcardPackId,
+            purchaseState.ownedFlashcardPackIds
+          );
+          return flashcards.filter(card => targetPackIds.includes(card.packId));
+        }
+        return flashcards.filter(card => packIds.includes(card.packId));
+      },
+
+      getDueCardsByChapter: (chapter, packIds = []) => {
         const { flashcards, initialized } = get();
 
         // 初期化されていない場合は初期化
@@ -101,10 +119,21 @@ export const useFlashcardStore = create<FlashcardState>()(
           get().loadFlashcards();
         }
 
+        const purchaseState = usePurchaseStore.getState();
+        const targetPackIds =
+          packIds.length > 0
+            ? packIds
+            : getTargetFlashcardPackIdsFromState(
+                purchaseState.selectedFlashcardPackId,
+                purchaseState.ownedFlashcardPackIds
+              );
+        const scopedCards = flashcards.filter(card => targetPackIds.includes(card.packId));
+        const targetCards = scopedCards.length > 0 ? scopedCards : flashcards;
+
         const today = new Date();
 
         // フィルタリング
-        const filteredCards = flashcards.filter(card => {
+        const filteredCards = targetCards.filter(card => {
           // 学習予定かどうか
           const isDue = !card.nextReview || new Date(card.nextReview) <= today;
           // 章でフィルタリング
@@ -115,7 +144,7 @@ export const useFlashcardStore = create<FlashcardState>()(
 
         // 学習予定のカードがない場合は、全てのカードを返す（初回学習用）
         if (filteredCards.length === 0) {
-          return flashcards.filter(card => chapter === null || card.chapter === chapter);
+          return targetCards.filter(card => chapter === null || card.chapter === chapter);
         }
 
         return filteredCards;
@@ -186,7 +215,8 @@ export const useFlashcardStore = create<FlashcardState>()(
           id: maxId + 1,
           term,
           definition,
-          chapter
+          chapter,
+          packId: "flashcard_pack_basic_001",
         };
         set({ flashcards: [...flashcards, newCard] });
       },

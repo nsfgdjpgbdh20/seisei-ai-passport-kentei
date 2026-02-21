@@ -1,0 +1,4 @@
+interface:
+  display_name: "AppStore Framing"
+  short_description: "iOS審査用スクショをフレーム付きで統一加工"
+  default_prompt: "App Store提出用のiOSスクリーンショットを、アプリ全体のトンマナに合わせたテーマでフレーム付き画像にしてください。入力枚数（1〜10枚）に合わせて shot-manifest.json（sourceName/suggestedName/title/subtitle）を先に生成し、runs配下に出力して latest を更新してください。"

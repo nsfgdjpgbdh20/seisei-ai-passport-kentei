@@ -21,6 +21,7 @@ import QuestionView from "@/components/QuestionView";
 import ProgressBar from "@/components/ProgressBar";
 import { formatTime } from "@/utils/format-time";
 import CommonHeader from "../../components/CommonHeader";
+import { usePurchaseStore } from "@/stores/purchase-store";
 // import { shuffleArray } from "@/utils/shuffle"; // utilsに存在しない可能性を考慮しコメントアウト
 
 const MINI_TEST_TIME = 5 * 60; // 5 minutes in seconds
@@ -30,6 +31,7 @@ export default function MiniTestScreen() {
   const { chapter } = useLocalSearchParams<{ chapter: string }>();
   const { colors } = useTheme();
   const { questions: allQuestions } = useQuestionStore();
+  const { getTargetQuestionPackIds } = usePurchaseStore();
   const { questionsEverCorrect, updateProgress } = useProgressStore();
   const insets = useSafeAreaInsets();
 
@@ -54,11 +56,15 @@ export default function MiniTestScreen() {
   };
 
   useEffect(() => {
+    const targetPackIds = getTargetQuestionPackIds();
+    const scopedQuestions = allQuestions.filter(q => targetPackIds.includes(q.packId));
+    const sourceQuestions = scopedQuestions.length > 0 ? scopedQuestions : allQuestions;
+
     // 修正: chapterパラメータに基づいて問題を絞り込む
     const targetChapter = chapter === 'random' || !chapter ? null : chapter;
     const chapterFilteredQuestions = targetChapter
-      ? allQuestions.filter(q => q.chapter === targetChapter)
-      : allQuestions;
+      ? sourceQuestions.filter(q => q.chapter === targetChapter)
+      : sourceQuestions;
 
     if (chapterFilteredQuestions.length > 0 && questionsEverCorrect) {
       // 絞り込んだリスト(chapterFilteredQuestions)に対してロジックを適用
@@ -92,7 +98,7 @@ export default function MiniTestScreen() {
       setAnswers(new Array(selectedQuestions.length).fill(null));
       setIsLoading(false);
     }
-  }, [allQuestions, questionsEverCorrect, chapter]);
+  }, [allQuestions, questionsEverCorrect, chapter, getTargetQuestionPackIds]);
 
   useEffect(() => {
     // Start timer

@@ -2,12 +2,12 @@
   "expo": {
     "name": "生成AIパスポート合格ドリル",
     "slug": "g-kentei-gokaku-doriru",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -26,7 +26,10 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.shunnakayama.seisei_ai_passport_drill"
+      "package": "app.shunnakayama.seisei_ai_passport_drill",
+      "blockedPermissions": [
+        "com.android.vending.BILLING"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -37,7 +40,8 @@
         {
           "origin": "https://rork.app/"
         }
-      ]
+      ],
+      "react-native-iap"
     ],
     "experiments": {
       "typedRoutes": true

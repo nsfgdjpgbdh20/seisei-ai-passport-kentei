@@ -9,6 +9,7 @@ import { Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CommonHeader from "../../components/CommonHeader";
 import { CHAPTERS } from "@/constants/chapters";
+import { usePurchaseStore } from "@/stores/purchase-store";
 
 export default function CardsScreen() {
   const { colors } = useTheme();
@@ -19,9 +20,24 @@ export default function CardsScreen() {
     loadFlashcards,
     getDueCardsByChapter
   } = useFlashcardStore();
+  const {
+    selectedFlashcardPackId,
+    availableFlashcardPacks,
+    getTargetFlashcardPackIds,
+  } = usePurchaseStore();
   const insets = useSafeAreaInsets();
 
   const [selectedChapter, setSelectedChapter] = useState<string | null>(null);
+  const targetPackIds = getTargetFlashcardPackIds();
+  const scopedFlashcards = flashcards.filter((card) =>
+    targetPackIds.includes(card.packId)
+  );
+  const displayFlashcards = scopedFlashcards.length > 0 ? scopedFlashcards : flashcards;
+  const selectedPackName =
+    selectedFlashcardPackId === null
+      ? "購入済みの全カードパック"
+      : availableFlashcardPacks.find((pack) => pack.id === selectedFlashcardPackId)?.title ??
+        "選択中のカードパック";
 
   useFocusEffect(
     useCallback(() => {
@@ -45,7 +61,7 @@ export default function CardsScreen() {
   const chapters = CHAPTERS;
 
   // 総カード数
-  const totalCount = flashcards.length;
+  const totalCount = displayFlashcards.length;
 
   // 分野ごとの件数もflashcardsからのみ取得
   const dueCardsByChapter = chapters.map(chapter => {
@@ -54,9 +70,9 @@ export default function CardsScreen() {
     }
     return {
       chapter,
-      dueCount: getDueCardsByChapter(chapter).length,
-      totalCount: flashcards.filter(card => card.chapter === chapter).length,
-      masteredCount: flashcards.filter(card => card.chapter === chapter && (card.repetitions ?? 0) >= 1).length
+      dueCount: getDueCardsByChapter(chapter, targetPackIds).length,
+      totalCount: displayFlashcards.filter(card => card.chapter === chapter).length,
+      masteredCount: displayFlashcards.filter(card => card.chapter === chapter && (card.repetitions ?? 0) >= 1).length
     };
   });
 
@@ -67,7 +83,7 @@ export default function CardsScreen() {
       return 10;
     } else {
       // 特定分野の場合
-      const chapterCards = flashcards.filter(card => card.chapter === selectedChapter);
+      const chapterCards = displayFlashcards.filter(card => card.chapter === selectedChapter);
       const unmasteredCards = chapterCards.filter(card => (card.repetitions ?? 0) < 1);
 
       if (unmasteredCards.length > 0) {
@@ -83,12 +99,12 @@ export default function CardsScreen() {
 
   // ボタン表示条件を修正: 全分野の場合はdueカードではなく全カードの存在を確認
   const hasCardsToStudy = selectedChapter !== null
-    ? getDueCardsByChapter(selectedChapter).length > 0 // 特定分野: dueカードがあるか？
-    : flashcards.length > 0;                        // 全分野: カードが1枚でもあるか？
+    ? getDueCardsByChapter(selectedChapter, targetPackIds).length > 0 // 特定分野: dueカードがあるか？
+    : displayFlashcards.length > 0;                        // 全分野: カードが1枚でもあるか？
 
   // デバッグ用マスター数は維持
-  const debugMastered = flashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
-  const masteredCount = flashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
+  const debugMastered = displayFlashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
+  const masteredCount = displayFlashcards.filter(card => (card.repetitions ?? 0) >= 1).length;
   const unmasteredCount = totalCount - masteredCount;
 
   return (
@@ -130,6 +146,9 @@ export default function CardsScreen() {
 
         <View style={styles.chapterSelector}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>分野を選択</Text>
+          <Text style={[styles.packScopeText, { color: colors.textSecondary }]}>
+            出題範囲: {selectedPackName}
+          </Text>
           <View style={styles.chapterList}>
             {/* 全分野選択ボタンを追加 */}
             <TouchableOpacity
@@ -250,6 +269,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 12,
+  },
+  packScopeText: {
+    fontSize: 12,
+    marginBottom: 8,
   },
   chapterList: {
     paddingRight: 16,

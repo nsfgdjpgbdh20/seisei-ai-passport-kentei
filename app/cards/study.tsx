@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTheme } from "@/context/theme-context";
 import { useFlashcardStore } from "@/stores/flashcard-store";
+import { usePurchaseStore } from "@/stores/purchase-store";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Flashcard } from "@/types/flashcard";
 import { MaterialIcons } from '@expo/vector-icons';
@@ -11,6 +12,7 @@ export default function StudyScreen() {
   const { chapter } = useLocalSearchParams<{ chapter: string }>();
   const { colors } = useTheme();
   const { getDueCardsByChapter, updateCardProgress, loadFlashcards, flashcards } = useFlashcardStore();
+  const { getTargetFlashcardPackIds } = usePurchaseStore();
 
   const [cards, setCards] = useState<Flashcard[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -23,18 +25,24 @@ export default function StudyScreen() {
     loadFlashcards();
     setTimeout(() => {
       try {
+        const targetPackIds = getTargetFlashcardPackIds();
+        const scopedCards = flashcards.filter((card) =>
+          targetPackIds.includes(card.packId)
+        );
+        const availableCards = scopedCards.length > 0 ? scopedCards : flashcards;
+
         let dueCards: Flashcard[] = [];
         if (chapter === "random") {
           // 全分野からランダム10枚
-          let allDue = getDueCardsByChapter(null);
+          let allDue = getDueCardsByChapter(null, targetPackIds);
           if (allDue.length === 0) {
             // 学習予定カードがなければ全カードからランダム10枚
-            allDue = flashcards;
+            allDue = availableCards;
           }
           dueCards = shuffle([...allDue]).slice(0, 10);
         } else {
           // 特定分野の場合：未習得カードを優先 (最大10枚)
-          const chapterCards = flashcards.filter(card => card.chapter === chapter);
+          const chapterCards = availableCards.filter(card => card.chapter === chapter);
           const unmasteredCards = chapterCards.filter(card => (card.repetitions ?? 0) < 1);
           
           if (unmasteredCards.length > 0) {

@@ -11,19 +11,36 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CommonHeader from "../../components/CommonHeader";
 import { CHAPTERS } from "@/constants/chapters";
 import { useUIStateStore } from "@/stores/ui-state-store";
+import { usePurchaseStore } from "@/stores/purchase-store";
 
 export default function QuizScreen() {
   const { colors } = useTheme();
   const { questions } = useQuestionStore();
   const { chapterProgress, lastScore, questionMastery, questionsEverCorrect } = useProgressStore();
   const { selectedQuizChapter, setSelectedQuizChapter } = useUIStateStore();
+  const {
+    selectedQuestionPackId,
+    availableQuestionPacks,
+    getTargetQuestionPackIds,
+  } = usePurchaseStore();
   const insets = useSafeAreaInsets();
 
-  const totalCount = questions.length;
+  const targetPackIds = getTargetQuestionPackIds();
+  const scopedQuestions = questions.filter((question) =>
+    targetPackIds.includes(question.packId)
+  );
+  const displayQuestions = scopedQuestions.length > 0 ? scopedQuestions : questions;
+
+  const totalCount = displayQuestions.length;
   const masteredCount = Object.keys(questionsEverCorrect).filter(id =>
-    questions.some(q => q.id === parseInt(id, 10))
+    displayQuestions.some(q => q.id === parseInt(id, 10))
   ).length;
   const unmasteredCount = totalCount - masteredCount;
+  const selectedPackName =
+    selectedQuestionPackId === null
+      ? "購入済みの全問題パック"
+      : availableQuestionPacks.find((pack) => pack.id === selectedQuestionPackId)?.title ??
+        "選択中の問題パック";
 
   const handleStartFullTest = () => {
     if (Platform.OS !== "web") {
@@ -48,7 +65,7 @@ export default function QuizScreen() {
     if (questions.length === 0) {
       return { chapter, totalCount: '-', masteredCount: '-' };
     }
-    const chapterQuestions = questions.filter(q => q.chapter === chapter);
+    const chapterQuestions = displayQuestions.filter(q => q.chapter === chapter);
     const totalChapterCount = chapterQuestions.length;
     let masteredChapterCount = 0;
     chapterQuestions.forEach(q => {
@@ -96,6 +113,9 @@ export default function QuizScreen() {
 
         <View style={styles.chapterSelectorContainer}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>分野を選択</Text>
+          <Text style={[styles.packScopeText, { color: colors.textSecondary }]}>
+            出題範囲: {selectedPackName}
+          </Text>
           <View style={styles.chapterList}>
             <TouchableOpacity
               key="all-chapters"
@@ -157,7 +177,7 @@ export default function QuizScreen() {
                 return '10問のクイズを学習する'; // 全分野は10問
               } else {
                 // 特定分野の場合
-                const chapterQuestions = questions.filter(q => q.chapter === selectedQuizChapter);
+                const chapterQuestions = displayQuestions.filter(q => q.chapter === selectedQuizChapter);
                 const unmasteredQuestions = chapterQuestions.filter(q => !questionsEverCorrect[q.id]);
                 let numToShow: number;
                 if (unmasteredQuestions.length > 0) {
@@ -192,6 +212,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 12,
+  },
+  packScopeText: {
+    fontSize: 12,
+    marginBottom: 8,
   },
   chapterList: {
     paddingRight: 16,
