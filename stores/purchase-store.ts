@@ -22,6 +22,16 @@ const FLASHCARD_BASE_PACK_ID = "flashcard_pack_basic_001";
 
 const QUESTION_PACK_ID_SET = new Set(sampleQuestionPacks.map((pack) => pack.id));
 const FLASHCARD_PACK_ID_SET = new Set(sampleFlashcardPacks.map((pack) => pack.id));
+const QUESTION_PAID_PACK_ID_SET = new Set(
+  sampleQuestionPacks
+    .filter((pack) => Boolean(pack.productId))
+    .map((pack) => pack.id)
+);
+const FLASHCARD_PAID_PACK_ID_SET = new Set(
+  sampleFlashcardPacks
+    .filter((pack) => Boolean(pack.productId))
+    .map((pack) => pack.id)
+);
 
 const QUESTION_PRODUCT_ID_TO_PACK_ID = new Map(
   sampleQuestionPacks
@@ -92,6 +102,34 @@ const normalizeIds = (
   return Array.from(normalized);
 };
 
+const filterPaidIdsForCurrentPlatform = (
+  ids: string[],
+  paidPackIdSet: Set<string>
+): string[] => {
+  if (IS_IOS) {
+    return ids;
+  }
+  return ids.filter((id) => !paidPackIdSet.has(id));
+};
+
+const normalizeOwnedQuestionPackIds = (value: unknown): string[] => {
+  const normalized = normalizeIds(
+    value,
+    QUESTION_PACK_ID_SET,
+    DEFAULT_OWNED_QUESTION_PACK_IDS
+  );
+  return filterPaidIdsForCurrentPlatform(normalized, QUESTION_PAID_PACK_ID_SET);
+};
+
+const normalizeOwnedFlashcardPackIds = (value: unknown): string[] => {
+  const normalized = normalizeIds(
+    value,
+    FLASHCARD_PACK_ID_SET,
+    DEFAULT_OWNED_FLASHCARD_PACK_IDS
+  );
+  return filterPaidIdsForCurrentPlatform(normalized, FLASHCARD_PAID_PACK_ID_SET);
+};
+
 const normalizeSelectedPackId = (
   value: unknown,
   ownedPackIds: string[],
@@ -127,15 +165,37 @@ const mergeOwnedIds = (
   return Array.from(merged);
 };
 
+const mergeOwnedQuestionPackIds = (
+  current: string[],
+  additional: string[]
+): string[] => {
+  const merged = mergeOwnedIds(
+    current,
+    additional,
+    QUESTION_PACK_ID_SET,
+    DEFAULT_OWNED_QUESTION_PACK_IDS
+  );
+  return normalizeOwnedQuestionPackIds(merged);
+};
+
+const mergeOwnedFlashcardPackIds = (
+  current: string[],
+  additional: string[]
+): string[] => {
+  const merged = mergeOwnedIds(
+    current,
+    additional,
+    FLASHCARD_PACK_ID_SET,
+    DEFAULT_OWNED_FLASHCARD_PACK_IDS
+  );
+  return normalizeOwnedFlashcardPackIds(merged);
+};
+
 export const getTargetQuestionPackIdsFromState = (
   selectedQuestionPackId: string | null,
   ownedQuestionPackIds: string[]
 ): string[] => {
-  const normalizedOwned = normalizeIds(
-    ownedQuestionPackIds,
-    QUESTION_PACK_ID_SET,
-    DEFAULT_OWNED_QUESTION_PACK_IDS
-  );
+  const normalizedOwned = normalizeOwnedQuestionPackIds(ownedQuestionPackIds);
 
   if (
     selectedQuestionPackId &&
@@ -153,11 +213,7 @@ export const getTargetFlashcardPackIdsFromState = (
   selectedFlashcardPackId: string | null,
   ownedFlashcardPackIds: string[]
 ): string[] => {
-  const normalizedOwned = normalizeIds(
-    ownedFlashcardPackIds,
-    FLASHCARD_PACK_ID_SET,
-    DEFAULT_OWNED_FLASHCARD_PACK_IDS
-  );
+  const normalizedOwned = normalizeOwnedFlashcardPackIds(ownedFlashcardPackIds);
 
   if (
     selectedFlashcardPackId &&
@@ -299,23 +355,24 @@ export const usePurchaseStore = create<PurchaseState>()(
       purchaseQuestionPack: async (packId) => {
         const state = get();
         const pack = state.availableQuestionPacks.find((item) => item.id === packId);
+        const normalizedOwnedQuestionPackIds = normalizeOwnedQuestionPackIds(
+          state.ownedQuestionPackIds
+        );
 
         if (!pack) {
           set({ purchaseError: "指定された問題パックが見つかりません。" });
           return false;
         }
 
-        if (state.ownedQuestionPackIds.includes(packId)) {
+        if (normalizedOwnedQuestionPackIds.includes(packId)) {
           set({ selectedQuestionPackId: packId, purchaseError: null });
           return true;
         }
 
         if (!pack.productId) {
-          const nextOwned = mergeOwnedIds(
-            state.ownedQuestionPackIds,
-            [pack.id],
-            QUESTION_PACK_ID_SET,
-            DEFAULT_OWNED_QUESTION_PACK_IDS
+          const nextOwned = mergeOwnedQuestionPackIds(
+            normalizedOwnedQuestionPackIds,
+            [pack.id]
           );
           set({
             ownedQuestionPackIds: nextOwned,
@@ -345,11 +402,9 @@ export const usePurchaseStore = create<PurchaseState>()(
             throw new Error("購入結果を確認できませんでした。");
           }
 
-          const nextOwned = mergeOwnedIds(
+          const nextOwned = mergeOwnedQuestionPackIds(
             get().ownedQuestionPackIds,
-            [pack.id],
-            QUESTION_PACK_ID_SET,
-            DEFAULT_OWNED_QUESTION_PACK_IDS
+            [pack.id]
           );
           set({
             ownedQuestionPackIds: nextOwned,
@@ -371,23 +426,24 @@ export const usePurchaseStore = create<PurchaseState>()(
       purchaseFlashcardPack: async (packId) => {
         const state = get();
         const pack = state.availableFlashcardPacks.find((item) => item.id === packId);
+        const normalizedOwnedFlashcardPackIds = normalizeOwnedFlashcardPackIds(
+          state.ownedFlashcardPackIds
+        );
 
         if (!pack) {
           set({ purchaseError: "指定されたカードパックが見つかりません。" });
           return false;
         }
 
-        if (state.ownedFlashcardPackIds.includes(packId)) {
+        if (normalizedOwnedFlashcardPackIds.includes(packId)) {
           set({ selectedFlashcardPackId: packId, purchaseError: null });
           return true;
         }
 
         if (!pack.productId) {
-          const nextOwned = mergeOwnedIds(
-            state.ownedFlashcardPackIds,
-            [pack.id],
-            FLASHCARD_PACK_ID_SET,
-            DEFAULT_OWNED_FLASHCARD_PACK_IDS
+          const nextOwned = mergeOwnedFlashcardPackIds(
+            normalizedOwnedFlashcardPackIds,
+            [pack.id]
           );
           set({
             ownedFlashcardPackIds: nextOwned,
@@ -417,11 +473,9 @@ export const usePurchaseStore = create<PurchaseState>()(
             throw new Error("購入結果を確認できませんでした。");
           }
 
-          const nextOwned = mergeOwnedIds(
+          const nextOwned = mergeOwnedFlashcardPackIds(
             get().ownedFlashcardPackIds,
-            [pack.id],
-            FLASHCARD_PACK_ID_SET,
-            DEFAULT_OWNED_FLASHCARD_PACK_IDS
+            [pack.id]
           );
           set({
             ownedFlashcardPackIds: nextOwned,
@@ -476,17 +530,13 @@ export const usePurchaseStore = create<PurchaseState>()(
             )
           );
 
-          const nextOwnedQuestionPackIds = mergeOwnedIds(
+          const nextOwnedQuestionPackIds = mergeOwnedQuestionPackIds(
             get().ownedQuestionPackIds,
-            restoredQuestionPackIds,
-            QUESTION_PACK_ID_SET,
-            DEFAULT_OWNED_QUESTION_PACK_IDS
+            restoredQuestionPackIds
           );
-          const nextOwnedFlashcardPackIds = mergeOwnedIds(
+          const nextOwnedFlashcardPackIds = mergeOwnedFlashcardPackIds(
             get().ownedFlashcardPackIds,
-            restoredFlashcardPackIds,
-            FLASHCARD_PACK_ID_SET,
-            DEFAULT_OWNED_FLASHCARD_PACK_IDS
+            restoredFlashcardPackIds
           );
 
           const nextSelectedQuestionPackId = normalizeSelectedPackId(
@@ -536,7 +586,10 @@ export const usePurchaseStore = create<PurchaseState>()(
           return;
         }
 
-        if (!get().ownedQuestionPackIds.includes(packId)) {
+        const normalizedOwnedQuestionPackIds = normalizeOwnedQuestionPackIds(
+          get().ownedQuestionPackIds
+        );
+        if (!normalizedOwnedQuestionPackIds.includes(packId)) {
           set({ purchaseError: "未購入の問題パックは選択できません。" });
           return;
         }
@@ -555,7 +608,10 @@ export const usePurchaseStore = create<PurchaseState>()(
           return;
         }
 
-        if (!get().ownedFlashcardPackIds.includes(packId)) {
+        const normalizedOwnedFlashcardPackIds = normalizeOwnedFlashcardPackIds(
+          get().ownedFlashcardPackIds
+        );
+        if (!normalizedOwnedFlashcardPackIds.includes(packId)) {
           set({ purchaseError: "未購入のカードパックは選択できません。" });
           return;
         }
@@ -564,11 +620,15 @@ export const usePurchaseStore = create<PurchaseState>()(
       },
 
       isQuestionPackOwned: (packId) => {
-        return get().ownedQuestionPackIds.includes(packId);
+        return normalizeOwnedQuestionPackIds(get().ownedQuestionPackIds).includes(
+          packId
+        );
       },
 
       isFlashcardPackOwned: (packId) => {
-        return get().ownedFlashcardPackIds.includes(packId);
+        return normalizeOwnedFlashcardPackIds(get().ownedFlashcardPackIds).includes(
+          packId
+        );
       },
 
       getTargetQuestionPackIds: () => {
@@ -590,19 +650,15 @@ export const usePurchaseStore = create<PurchaseState>()(
     {
       name: "seisei-ai-passport-purchase-v1",
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
+      version: 2,
       migrate: (persistedState) => {
         const state = (persistedState as Partial<PurchaseState>) ?? {};
 
-        const ownedQuestionPackIds = normalizeIds(
-          state.ownedQuestionPackIds,
-          QUESTION_PACK_ID_SET,
-          DEFAULT_OWNED_QUESTION_PACK_IDS
+        const ownedQuestionPackIds = normalizeOwnedQuestionPackIds(
+          state.ownedQuestionPackIds
         );
-        const ownedFlashcardPackIds = normalizeIds(
-          state.ownedFlashcardPackIds,
-          FLASHCARD_PACK_ID_SET,
-          DEFAULT_OWNED_FLASHCARD_PACK_IDS
+        const ownedFlashcardPackIds = normalizeOwnedFlashcardPackIds(
+          state.ownedFlashcardPackIds
         );
 
         return {
@@ -632,10 +688,22 @@ export const usePurchaseStore = create<PurchaseState>()(
         } as PurchaseState;
       },
       partialize: (state) => ({
-        ownedQuestionPackIds: state.ownedQuestionPackIds,
-        ownedFlashcardPackIds: state.ownedFlashcardPackIds,
-        selectedQuestionPackId: state.selectedQuestionPackId,
-        selectedFlashcardPackId: state.selectedFlashcardPackId,
+        ownedQuestionPackIds: normalizeOwnedQuestionPackIds(
+          state.ownedQuestionPackIds
+        ),
+        ownedFlashcardPackIds: normalizeOwnedFlashcardPackIds(
+          state.ownedFlashcardPackIds
+        ),
+        selectedQuestionPackId: normalizeSelectedPackId(
+          state.selectedQuestionPackId,
+          normalizeOwnedQuestionPackIds(state.ownedQuestionPackIds),
+          QUESTION_PACK_ID_SET
+        ),
+        selectedFlashcardPackId: normalizeSelectedPackId(
+          state.selectedFlashcardPackId,
+          normalizeOwnedFlashcardPackIds(state.ownedFlashcardPackIds),
+          FLASHCARD_PACK_ID_SET
+        ),
         lastPurchaseAt: state.lastPurchaseAt,
       }),
     }

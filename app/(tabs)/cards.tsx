@@ -32,7 +32,7 @@ export default function CardsScreen() {
   const scopedFlashcards = flashcards.filter((card) =>
     targetPackIds.includes(card.packId)
   );
-  const displayFlashcards = scopedFlashcards.length > 0 ? scopedFlashcards : flashcards;
+  const displayFlashcards = scopedFlashcards;
   const selectedPackName =
     selectedFlashcardPackId === null
       ? "購入済みの全カードパック"

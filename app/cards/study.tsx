@@ -26,10 +26,11 @@ export default function StudyScreen() {
     setTimeout(() => {
       try {
         const targetPackIds = getTargetFlashcardPackIds();
-        const scopedCards = flashcards.filter((card) =>
+        const latestFlashcards = useFlashcardStore.getState().flashcards;
+        const scopedCards = latestFlashcards.filter((card) =>
           targetPackIds.includes(card.packId)
         );
-        const availableCards = scopedCards.length > 0 ? scopedCards : flashcards;
+        const availableCards = scopedCards;
 
         let dueCards: Flashcard[] = [];
         if (chapter === "random") {

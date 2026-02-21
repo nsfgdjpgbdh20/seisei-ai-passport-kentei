@@ -128,7 +128,7 @@ export const useFlashcardStore = create<FlashcardState>()(
                 purchaseState.ownedFlashcardPackIds
               );
         const scopedCards = flashcards.filter(card => targetPackIds.includes(card.packId));
-        const targetCards = scopedCards.length > 0 ? scopedCards : flashcards;
+        const targetCards = scopedCards;
 
         const today = new Date();
 

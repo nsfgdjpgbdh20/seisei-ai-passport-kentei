@@ -58,7 +58,7 @@ export default function MiniTestScreen() {
   useEffect(() => {
     const targetPackIds = getTargetQuestionPackIds();
     const scopedQuestions = allQuestions.filter(q => targetPackIds.includes(q.packId));
-    const sourceQuestions = scopedQuestions.length > 0 ? scopedQuestions : allQuestions;
+    const sourceQuestions = scopedQuestions;
 
     // 修正: chapterパラメータに基づいて問題を絞り込む
     const targetChapter = chapter === 'random' || !chapter ? null : chapter;
@@ -66,38 +66,47 @@ export default function MiniTestScreen() {
       ? sourceQuestions.filter(q => q.chapter === targetChapter)
       : sourceQuestions;
 
-    if (chapterFilteredQuestions.length > 0 && questionsEverCorrect) {
-      // 絞り込んだリスト(chapterFilteredQuestions)に対してロジックを適用
-      const unansweredQuestions = chapterFilteredQuestions.filter(q => !questionsEverCorrect[q.id]);
-      let selectedQuestions: Question[] = [];
-      const numQuestionsToSelect = MINI_TEST_QUESTIONS;
-
-      if (unansweredQuestions.length > 0) {
-        const shuffledUnanswered = shuffle(unansweredQuestions);
-        selectedQuestions = shuffledUnanswered.slice(0, numQuestionsToSelect);
-      } else {
-        const shuffledFiltered = shuffle([...chapterFilteredQuestions]); // コピーをシャッフル
-        selectedQuestions = shuffledFiltered.slice(0, numQuestionsToSelect);
-      }
-
-      // フォールバックも絞り込んだリストから
-      if (selectedQuestions.length === 0 && chapterFilteredQuestions.length > 0) {
-        selectedQuestions = shuffle(chapterFilteredQuestions).slice(0, numQuestionsToSelect);
-      }
-
-      if (selectedQuestions.length === 0) {
-        // メッセージを少し具体的に
-        const alertMessage = targetChapter
-          ? `分野「${targetChapter}」には出題できる問題がありません。`
-          : "出題できる問題がありません。";
-        Alert.alert("エラー", alertMessage, [{ text: "OK", onPress: () => router.back() }]);
-        return;
-      }
-
-      setTestQuestions(selectedQuestions);
-      setAnswers(new Array(selectedQuestions.length).fill(null));
+    if (chapterFilteredQuestions.length === 0) {
+      const alertMessage = targetChapter
+        ? `分野「${targetChapter}」には出題できる問題がありません。`
+        : "出題できる問題がありません。";
+      Alert.alert("エラー", alertMessage, [{ text: "OK", onPress: () => router.back() }]);
       setIsLoading(false);
+      return;
     }
+
+    // 絞り込んだリスト(chapterFilteredQuestions)に対してロジックを適用
+    const unansweredQuestions = chapterFilteredQuestions.filter(
+      (q) => !questionsEverCorrect[q.id]
+    );
+    let selectedQuestions: Question[] = [];
+    const numQuestionsToSelect = MINI_TEST_QUESTIONS;
+
+    if (unansweredQuestions.length > 0) {
+      const shuffledUnanswered = shuffle(unansweredQuestions);
+      selectedQuestions = shuffledUnanswered.slice(0, numQuestionsToSelect);
+    } else {
+      const shuffledFiltered = shuffle([...chapterFilteredQuestions]); // コピーをシャッフル
+      selectedQuestions = shuffledFiltered.slice(0, numQuestionsToSelect);
+    }
+
+    // フォールバックも絞り込んだリストから
+    if (selectedQuestions.length === 0 && chapterFilteredQuestions.length > 0) {
+      selectedQuestions = shuffle(chapterFilteredQuestions).slice(0, numQuestionsToSelect);
+    }
+
+    if (selectedQuestions.length === 0) {
+      const alertMessage = targetChapter
+        ? `分野「${targetChapter}」には出題できる問題がありません。`
+        : "出題できる問題がありません。";
+      Alert.alert("エラー", alertMessage, [{ text: "OK", onPress: () => router.back() }]);
+      setIsLoading(false);
+      return;
+    }
+
+    setTestQuestions(selectedQuestions);
+    setAnswers(new Array(selectedQuestions.length).fill(null));
+    setIsLoading(false);
   }, [allQuestions, questionsEverCorrect, chapter, getTargetQuestionPackIds]);
 
   useEffect(() => {

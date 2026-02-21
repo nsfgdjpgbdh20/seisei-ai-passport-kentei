@@ -29,7 +29,7 @@ export default function QuizScreen() {
   const scopedQuestions = questions.filter((question) =>
     targetPackIds.includes(question.packId)
   );
-  const displayQuestions = scopedQuestions.length > 0 ? scopedQuestions : questions;
+  const displayQuestions = scopedQuestions;
 
   const totalCount = displayQuestions.length;
   const masteredCount = Object.keys(questionsEverCorrect).filter(id =>

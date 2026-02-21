@@ -69,16 +69,14 @@ export const useQuestionStore = create<QuestionState>()(
         const availableQuestions = questions.filter((question) =>
           targetPackIds.includes(question.packId)
         );
-        const targetQuestions =
-          availableQuestions.length > 0 ? availableQuestions : questions;
 
         // If not enough questions, return all available
-        if (targetQuestions.length <= count) {
-          return [...targetQuestions];
+        if (availableQuestions.length <= count) {
+          return [...availableQuestions];
         }
 
         // Shuffle and select questions
-        return shuffleArray([...targetQuestions]).slice(0, count);
+        return shuffleArray([...availableQuestions]).slice(0, count);
       },
 
       getMiniTestQuestions: (count, chapter = null) => {
@@ -91,13 +89,11 @@ export const useQuestionStore = create<QuestionState>()(
         const packFilteredQuestions = questions.filter((question) =>
           targetPackIds.includes(question.packId)
         );
-        const scopedQuestions =
-          packFilteredQuestions.length > 0 ? packFilteredQuestions : questions;
 
         // Filter by chapter if specified
         const filteredQuestions = chapter
-          ? scopedQuestions.filter(q => q.chapter === chapter)
-          : scopedQuestions;
+          ? packFilteredQuestions.filter(q => q.chapter === chapter)
+          : packFilteredQuestions;
 
         // If not enough questions, return all available
         if (filteredQuestions.length <= count) {
